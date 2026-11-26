@@ -107,3 +107,30 @@ jobs:
         run: |
           docker push "${IMAGE_NAME}:${GITHUB_SHA}"
           docker push "${IMAGE_NAME}:latest"
+  deploy:
+    needs: image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, devops-vm]
+    permissions:
+      contents: read
+    concurrency:
+      group: deploy-devops-vm
+      cancel-in-progress: false
+    env:
+      VM_HOST: 127.0.0.1:8080
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Deploy with Ansible
+        working-directory: ansible
+        run: |
+          args=()
+          if git diff --quiet HEAD^ HEAD -- .; then
+            args+=(--tags app)
+          fi
+          ansible-playbook site.yml "${args[@]}" -e "app_tag=$GITHUB_SHA"
+      - name: Check through Nginx
+        run: curl --fail --show-error --max-time 10 "http://$VM_HOST/health"
