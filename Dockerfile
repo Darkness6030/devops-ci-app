@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FORM python:3.12-slim
 LABEL org.opencontainers.image.source="https://github.com/darkness6030/devops-ci-app"
 LABEL org.opencontainers.image.description="DevOps CI sample application"
 RUN useradd --system --no-create-home app
